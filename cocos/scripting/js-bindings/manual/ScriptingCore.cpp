@@ -875,8 +875,12 @@ void ScriptingCore::reset()
 
 void ScriptingCore::restartVM()
 {
+	CCLOG("restartVM");
+	CCLOG("cleanup");
     cleanup();
+	CCLOG("initRegister");
     initRegister();
+	CCLOG("applicationDidFinishLaunching");
     Application::getInstance()->applicationDidFinishLaunching();
 }
 
@@ -891,20 +895,28 @@ void ScriptingCore::cleanup()
     if (!_needCleanup) {
         return;
     }
+	CCLOG("localStorageFree");
     localStorageFree();
+	CCLOG("removeAllRoots");
     removeAllRoots(_cx);
+
+	CCLOG("garbageCollect");
     garbageCollect();
 
     if (_js_log_buf) {
         free(_js_log_buf);
         _js_log_buf = NULL;
     }
+
+	CCLOG("filename_script.clear()");
     
     for (auto& s : filename_script)
     {
         CC_SAFE_DELETE(s.second); 
     }
     filename_script.clear();
+
+	CCLOG("registrationList.clear()");
     registrationList.clear();
     
     for (auto iter = _js_global_type_map.begin(); iter != _js_global_type_map.end(); ++iter)
@@ -913,21 +925,27 @@ void ScriptingCore::cleanup()
         delete iter->second->proto.ptr();
     }
     
+	CCLOG("CC_SAFE_DELETE(_global)");
     CC_SAFE_DELETE(_global);
     CC_SAFE_DELETE(_debugGlobal);
 
     if (_cx)
     {
+		CCLOG("JS_DestroyContext(_cx)");
         JS_DestroyContext(_cx);
         _cx = NULL;
     }
     if (_rt)
     {
+		CCLOG("JS_DestroyRuntime(_rt)");
         JS_DestroyRuntime(_rt);
         _rt = NULL;
     }
     
+	CCLOG("clearGlobalMaps");
     clearGlobalMaps();
+
+	PoolManager::getInstance()->getCurrentPool()->clear();
     
     _needCleanup = false;
 }
@@ -1053,6 +1071,9 @@ void ScriptingCore::rootScriptObject(cocos2d::Ref* target)
 
 void ScriptingCore::releaseScriptObject(cocos2d::Ref* owner, cocos2d::Ref* target)
 {
+	if (!_cx)
+		return;
+
     JS::RootedObject global(_cx, _global->get());
     JSAutoCompartment ac(_cx, global);
     JS::RootedObject jsbObj(_cx);

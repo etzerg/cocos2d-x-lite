@@ -121,6 +121,9 @@ JSFunctionWrapper::~JSFunctionWrapper()
 {
     ScriptingCore* sc = ScriptingCore::getInstance();
     JSContext* cx = sc->getGlobalContext();
+	if (!cx) 
+		return;
+
     JSAutoCompartment(cx, sc->getGlobalObject());
     JS::RootedValue ownerVal(_cx, _owner);
     
